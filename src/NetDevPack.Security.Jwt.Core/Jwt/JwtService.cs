@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using NetDevPack.Security.Jwt.Core.Interfaces;
 using NetDevPack.Security.Jwt.Core.Jwa;
 using NetDevPack.Security.Jwt.Core.Model;
+using RedLockNet;
 
 namespace NetDevPack.Security.Jwt.Core.Jwt
 {
@@ -11,11 +12,13 @@ namespace NetDevPack.Security.Jwt.Core.Jwt
     {
         private readonly IJsonWebKeyStore _store;
         private readonly IOptions<JwtOptions> _options;
+        private readonly IDistributedLockFactory _lockFactory;
 
-        public JwtService(IJsonWebKeyStore store, IOptions<JwtOptions> options)
+        public JwtService(IJsonWebKeyStore store, IOptions<JwtOptions> options, IDistributedLockFactory lockFactory)
         {
             _store = store;
             _options = options;
+            _lockFactory = lockFactory;
         }
         public async Task<SecurityKey> GenerateKey(JwtKeyType jwtKeyType = JwtKeyType.Jws)
         {
@@ -33,10 +36,30 @@ namespace NetDevPack.Security.Jwt.Core.Jwt
 
             if (NeedsUpdate(current))
             {
-                // According NIST - https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r4.pdf - Private key should be removed when no longer needs
-                await _store.Revoke(current);
-                var newKey = await GenerateKey(jwtKeyType);
-                return newKey;
+                using (var redLock = await _lockFactory.CreateLockAsync(
+                    resource: "KeyRotationLock",
+                    expiryTime: TimeSpan.FromSeconds(30),
+                    waitTime: TimeSpan.FromSeconds(10),
+                    retryTime: TimeSpan.FromSeconds(1)))
+                {
+                    if (redLock.IsAcquired)
+                    {
+                        current = await _store.GetCurrent(jwtKeyType);
+                        if (NeedsUpdate(current))
+                        {
+                            // According NIST - https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-57pt1r4.pdf - Private key should be removed when no longer needs
+                            await _store.Revoke(current);
+                            var newKey = await GenerateKey(jwtKeyType);
+                            return newKey;
+                        }
+                    }
+                    else
+                    {
+                        // Handle lock acquisition failure
+                        throw new Exception("Key rotation in progress. Please retry.");
+                    }
+                }
+
             }
 
             // options has change. Change current key

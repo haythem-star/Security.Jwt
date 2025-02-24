@@ -4,18 +4,24 @@
     <TargetFrameworks>netstandard2.1;net6.0;net7.0;net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>10.0</LangVersion>
-    <Authors>Bruno Brito</Authors>
+    <Authors>Bruno Brito, Haythem Ben Salah</Authors>
     <PackageIconUrl>https://raw.githubusercontent.com/NetDevPack/NetDevPack/master/assets/IconNuget.png</PackageIconUrl>
     <PackageTags>jwt jwks rsa ecdsa hmac oauth2 key rotating</PackageTags>
     <Title>JWT Signing Credentials - Auto key rotation</Title>
     <Description>Component to manage your JWK and protect your JWT Signing</Description>
     <NeutralLanguage>en</NeutralLanguage>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/NetDevPack/NetDevPack.Security.JwtSigningCredentials</RepositoryUrl>
+    <RepositoryUrl>https://github.com/haythem-star/Security.Jwt/tree/master/src/NetDevPack.Security.Jwt.Core</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Company>Monkeyway</Company>
+    <AssemblyVersion></AssemblyVersion>
+    <FileVersion></FileVersion>
+    <PackageId>Monkeyway.Security.Jwt.Core</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="RedLock.net" Version="2.3.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.5.1" />
   </ItemGroup>
 
